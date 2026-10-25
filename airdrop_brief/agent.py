@@ -15,13 +15,13 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Literal
-
-from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Literal
 
 from openminion import Agent, AgentOutputValidationError, ProviderError, subagent, tool
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 from . import sources
 
@@ -57,7 +57,7 @@ class CampaignBrief(BaseModel):
         return "unknown" if value is None else str(value)
 
     @model_validator(mode="after")
-    def _separate_risks_from_rules(self) -> "CampaignBrief":
+    def _separate_risks_from_rules(self) -> CampaignBrief:
         """Keep only real risks in red_flags; move rules the model misfiled to requirements."""
         risks: list[str] = []
         for flag in self.red_flags:
@@ -267,7 +267,7 @@ def run_brief(
         result.error = f"invalid model output: {exc.raw_text[:300]}"
     except ProviderError as exc:
         result.error = f"provider failed: {exc.code}: {exc.message}"
-    except Exception as exc:  # TurnTimeoutError and anything unexpected
+    except Exception as exc:  # noqa: BLE001 - TurnTimeoutError and anything unexpected become a reported error
         result.error = f"{type(exc).__name__}: {exc}"
     return result
 
@@ -298,8 +298,8 @@ def _parse_review(text: str) -> Review:
     if start != -1 and end > start:
         try:
             return Review.model_validate_json(text[start : end + 1])
-        except Exception:
-            pass
+        except ValidationError:
+            pass  # fall through to the explicit "unparseable" review below
     return Review(agrees=False, issues=["reviewer returned unparseable output: " + text[:200]])
 
 

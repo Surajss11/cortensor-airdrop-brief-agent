@@ -46,11 +46,11 @@ class PageSnapshot:
 
 
 def _strip_html(raw: str) -> tuple[str, str, list[str]]:
-    title_match = re.search(r"<title[^>]*>(.*?)</title>", raw, re.I | re.S)
+    title_match = re.search(r"<title[^>]*>(.*?)</title>", raw, re.IGNORECASE | re.DOTALL)
     title = html.unescape(title_match.group(1).strip()) if title_match else ""
-    links = re.findall(r'href=["\'](https?://[^"\'#\s]+)', raw, re.I)
-    body = re.sub(r"<(script|style|noscript|svg)[^>]*>.*?</\1>", " ", raw, flags=re.I | re.S)
-    body = re.sub(r"<br\s*/?>|</p>|</li>|</h\d>|</div>", "\n", body, flags=re.I)
+    links = re.findall(r'href=["\'](https?://[^"\'#\s]+)', raw, re.IGNORECASE)
+    body = re.sub(r"<(script|style|noscript|svg)[^>]*>.*?</\1>", " ", raw, flags=re.IGNORECASE | re.DOTALL)
+    body = re.sub(r"<br\s*/?>|</p>|</li>|</h\d>|</div>", "\n", body, flags=re.IGNORECASE)
     body = re.sub(r"<[^>]+>", " ", body)
     body = html.unescape(body)
     body = re.sub(r"[ \t\r\f\v]+", " ", body)
@@ -66,11 +66,11 @@ def fetch(url: str) -> PageSnapshot:
         return PageSnapshot(url=url, status=0, title="", text="", error="only http(s) URLs are allowed")
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "text/html,text/plain,*/*"})
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response:  # noqa: S310 - scheme checked above
+        with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response:
             raw_bytes = response.read(MAX_BYTES)
             charset = response.headers.get_content_charset() or "utf-8"
             status = int(getattr(response, "status", 200))
-    except Exception as exc:  # network errors are data for the agent, not crashes
+    except (OSError, ValueError) as exc:  # network errors are data for the agent, not crashes
         return PageSnapshot(url=url, status=0, title="", text="", error=f"{type(exc).__name__}: {exc}")
     raw = raw_bytes.decode(charset, errors="replace")
     if "<html" in raw[:2000].lower() or "<!doctype" in raw[:200].lower():
@@ -87,7 +87,7 @@ def scan_signals(text: str) -> dict[str, list[str]]:
         found: dict[str, list[str]] = {}
         for label, pattern in patterns.items():
             snippets = []
-            for match in re.finditer(pattern, text, re.I):
+            for match in re.finditer(pattern, text, re.IGNORECASE):
                 start, end = max(0, match.start() - 50), min(len(text), match.end() + 50)
                 snippets.append(" ".join(text[start:end].split()))
                 if len(snippets) >= 3:
@@ -106,7 +106,7 @@ def social_links(links: list[str]) -> list[str]:
 
 KEY_LINE_PATTERN = re.compile(
     r"(\$\s?\d|usdc|usdt|prize|reward|deadline|ends?\b|until|timeline|submission|winners?|leaderboard|kyc|wallet|seed)",
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -127,9 +127,9 @@ RISK_CUE = re.compile(
     r"guaranteed|risk[- ]free|too good|urgen|last chance|expires in|no (official|contact|docs|terms)|"
     r"kyc|government id|passport|discretionary|may not (be )?(paid|awarded)|unclear (reward|payout|terms)|"
     r"lock(ed|up)?|vesting|staking lock|not guaranteed|red flag|risk)",
-    re.I,
+    re.IGNORECASE,
 )
-NOTHING_FOUND = re.compile(r"^\s*(none|no (specific |obvious )?red flags?.*|n/?a|unknown)\s*\.?\s*$", re.I)
+NOTHING_FOUND = re.compile(r"^\s*(none|no (specific |obvious )?red flags?.*|n/?a|unknown)\s*\.?\s*$", re.IGNORECASE)
 
 
 def is_risk(text: str) -> bool:
