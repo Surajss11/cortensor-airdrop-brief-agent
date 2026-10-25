@@ -1,0 +1,91 @@
+From 08b82886b22890f7a6ee3cb1f8de98447f2c91a4 Mon Sep 17 00:00:00 2001
+From: Surajss11 <Surajss11@users.noreply.github.com>
+Date: Sun, 25 Oct 2026 13:31:42 +0530
+Subject: [PATCH] fix(llm): keep fallback tool call ids unique across model
+ steps in a turn
+
+Providers that return tool calls without ids (e.g. Ollama with the default
+fallback strategy) got call_1, call_2... per response. When the closure gate
+sends a turn back through entry, a later step reuses call_1 for a different
+tool, the stable tool-transcript event id collides and the turn fails with
+'session event idempotency conflict'. Add a per-response nonce.
+---
+ src/openminion/modules/llm/client_call.py     |  9 ++++++-
+ ..._transcript_continuity_characterization.py | 27 ++++++++++++++++++-
+ 2 files changed, 34 insertions(+), 2 deletions(-)
+
+diff --git a/src/openminion/modules/llm/client_call.py b/src/openminion/modules/llm/client_call.py
+index dca0434c..fd77dc45 100644
+--- a/src/openminion/modules/llm/client_call.py
++++ b/src/openminion/modules/llm/client_call.py
+@@ -3,6 +3,7 @@ from __future__ import annotations
+ import json
+ import math
+ from typing import Any
++from uuid import uuid4
+ 
+ from openminion.base.constants import STATE_KEY_FINALIZATION_STATUS
+ from openminion.modules.llm.providers.base import (
+@@ -508,9 +509,15 @@ def llm_response_kwargs(
+     prompt_tokens, completion_tokens, total_tokens, _input, _output, cached_tokens = (
+         token_usage_values(usage_payload)
+     )
++    # Providers that return tool calls without ids (for example text-parsed
++    # fallback calls) need ids that stay unique across every model step of a
++    # turn. Tool transcript event ids are derived from (turn, call_id), so a
++    # bare "call_1" reused by a later step in the same turn collides with the
++    # first step's event and fails the turn with an idempotency conflict.
++    response_nonce = uuid4().hex[:8]
+     tool_calls = [
+         ToolCall(
+-            id=tc.id or f"call_{index + 1}",
++            id=tc.id or f"call_{response_nonce}_{index + 1}",
+             name=tc.name,
+             arguments=tc.arguments,
+             batch_index=index,
+diff --git a/tests/llm/test_tool_transcript_continuity_characterization.py b/tests/llm/test_tool_transcript_continuity_characterization.py
+index 46ac06b8..9ed1be4c 100644
+--- a/tests/llm/test_tool_transcript_continuity_characterization.py
++++ b/tests/llm/test_tool_transcript_continuity_characterization.py
+@@ -90,12 +90,37 @@ def test_provider_calls_without_ids_receive_unique_batch_ids() -> None:
+         ),
+     ]
+ 
+-    assert [call.id for call in calls] == ["call_1", "call_2"]
++    ids = [call.id for call in calls]
++    assert len(set(ids)) == 2
++    assert ids[0].startswith("call_") and ids[0].endswith("_1")
++    assert ids[1].startswith("call_") and ids[1].endswith("_2")
+     assert validate_tool_transcript(LLMRequest(messages=messages)) == (
+         "canonical_events"
+     )
+ 
+ 
++def test_provider_calls_without_ids_stay_unique_across_responses() -> None:
++    """Two model steps in one turn must not both produce ``call_1``."""
++
++    def _ids() -> list[str]:
++        payload = llm_response_kwargs(
++            resp=ProviderResponse(
++                text="",
++                model="adapter-neutral-model",
++                tool_calls=[
++                    ProviderToolCall(id="", name="file.read", arguments={"path": "a"})
++                ],
++            ),
++            req=SimpleNamespace(model="adapter-neutral-model"),
++            client_name="adapter-neutral",
++            structured_fields={},
++            trace_context={},
++        )
++        return [call.id for call in payload["tool_calls"]]
++
++    assert _ids() != _ids()
++
++
+ def test_provider_recovery_marker_survives_llm_response_conversion() -> None:
+     payload = llm_response_kwargs(
+         resp=ProviderResponse(
+-- 
+2.47.3
+

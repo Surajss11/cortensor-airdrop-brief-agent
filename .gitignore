@@ -5,3 +5,4 @@ __pycache__/
 findings/state-after-idempotency-conflict/
 output/tracker.jsonl
 .env
+output/
