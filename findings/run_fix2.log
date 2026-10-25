@@ -1,0 +1,14 @@
+[1/3] analyst: collecting evidence for https://docs.cortensor.network/community-and-ecosystem/hackathon/hackathon-5.md
+# Campaign brief failed
+
+URL: https://docs.cortensor.network/community-and-ecosystem/hackathon/hackathon-5.md
+
+Error: `invalid model output: openminion: Based on the information provided, here is a draft campaign brief for the Hackathon 5:
+
+**Campaign Brief: Hackathon #5**
+
+**Objective:**
+- A builder round for Cortensor Mainnet Full Alpha
+- Build a small, working agent with the OpenMinion 0.1 Python SDK
+- Show it running and tell us what`
+

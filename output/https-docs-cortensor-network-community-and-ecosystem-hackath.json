@@ -1,0 +1,47 @@
+{
+  "url": "https://docs.cortensor.network/community-and-ecosystem/hackathon/hackathon-5.md",
+  "brief": {
+    "project": "Hackathon #5",
+    "reward": "$1,150 in $COR equivalent",
+    "deadline": "Not specified in the provided information",
+    "tasks": [
+      "Build a small, working agent with the OpenMinion 0.1 Python SDK.",
+      "Show the agent running and describe what worked, what broke, and what should improve.",
+      "Exercise agent execution, models, tools, permissions, sessions, memory, skills, tasks, delegation, and diagnostics.",
+      "Use the OpenMinion 0.1 Python SDK as a meaningful part of the runtime.",
+      "Complete one useful, repeatable workflow.",
+      "Show a real model-backed run in a short demo.",
+      "Identify the OpenMinion building blocks tested, including any bugs or rough edges found."
+    ],
+    "requirements": [
+      "Use the OpenMinion 0.1 Python SDK as a meaningful part of the runtime.",
+      "Complete one useful, repeatable workflow.",
+      "Show a real model-backed run in a short demo.",
+      "Identify the OpenMinion building blocks tested, including any bugs or rough edges found."
+    ],
+    "red_flags": [
+      "No specific red flags mentioned in the provided information."
+    ],
+    "effort": "medium",
+    "verdict": "do_it",
+    "reason": "The hackathon provides a clear objective, guidelines, and prizes. Participants can focus on the parts their project actually uses, and useful workflows and real model-backed runs are encouraged."
+  },
+  "review": {
+    "agrees": true,
+    "issues": [
+      "The deadline is not specified in the provided information.",
+      "The red flags section is empty and no specific red flags are mentioned."
+    ]
+  },
+  "saved": false,
+  "timings": {
+    "brief_s": 473.3,
+    "review_s": 284.5,
+    "save_s": 85.3
+  },
+  "run_ids": [
+    "b5cbf300c5524987958f12529247031a",
+    "71b5e00a78ba47cd9ea4b34ca032ade1"
+  ],
+  "error": null
+}

@@ -1,0 +1,7 @@
+[1/3] analyst: collecting evidence for https://docs.cortensor.network/community-and-ecosystem/hackathon/hackathon-5.md
+# Campaign brief failed
+
+URL: https://docs.cortensor.network/community-and-ecosystem/hackathon/hackathon-5.md
+
+Error: `invalid model output: openminion: State machine error: RUNTIME_ERROR: session event idempotency conflict: 15a6290a5fcb5afdbba628b45dd72a52`
+

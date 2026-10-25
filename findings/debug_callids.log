@@ -1,0 +1,5 @@
+PROVIDER_TOOL_CALLS [('submit_output', "''", 'parsed')]
+PROVIDER_TOOL_CALLS [('fetch_campaign_page', "''", 'parsed')]
+PROVIDER_TOOL_CALLS [('fetch_campaign_page', "''", 'parsed')]
+PROVIDER_TOOL_CALLS [('fetch_campaign_page', "''", 'parsed')]
+Error: `provider failed: PROVIDER_ERROR: The configured model provider failed before it could return a decision (EventStore.insert_session_event_tx() got an unexpected keyword argument 'resp'). Please retry or switch models.`
