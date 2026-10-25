@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from openminion import Agent, AgentOutputValidationError, ProviderError, subagent, tool
 
@@ -30,9 +30,9 @@ TRACKER_PATH = Path("output/tracker.jsonl")
 
 class CampaignBrief(BaseModel):
     project: str = Field(description="Project or campaign name")
-    reward: str = Field(description="Prize pool / reward exactly as stated, or 'unknown'")
-    deadline: str = Field(description="Deadline exactly as stated, or 'unknown'")
-    tasks: list[str] = Field(description="Concrete actions a participant must do")
+    reward: str = Field(default="unknown", description="Prize pool / reward exactly as stated, or 'unknown'")
+    deadline: str = Field(default="unknown", description="Deadline exactly as stated, or 'unknown'")
+    tasks: list[str] = Field(default_factory=list, description="Concrete actions a participant must do")
     requirements: list[str] = Field(default_factory=list, description="Accounts, KYC, holdings, region limits")
     red_flags: list[str] = Field(default_factory=list, description="Risks backed by evidence from the page")
     effort: Literal["low", "medium", "high", "unknown"] = "unknown"
@@ -55,6 +55,25 @@ class CampaignBrief(BaseModel):
         if isinstance(value, (list, tuple)):
             return "; ".join(str(v) for v in value)
         return "unknown" if value is None else str(value)
+
+    @model_validator(mode="after")
+    def _separate_risks_from_rules(self) -> "CampaignBrief":
+        """Keep only real risks in red_flags; move rules the model misfiled to requirements."""
+        risks: list[str] = []
+        for flag in self.red_flags:
+            if sources.is_risk(flag):
+                risks.append(flag)
+            elif not sources.NOTHING_FOUND.match(flag) and flag not in self.requirements:
+                self.requirements.append(flag)
+        self.red_flags = risks
+        return self
+
+    def add_scan_flags(self, red_flag_hits: dict[str, list[str]]) -> None:
+        """Add deterministic scanner hits so a model can never drop them."""
+        for label, snippets in red_flag_hits.items():
+            entry = f"scanner: {label.replace('_', ' ')} ({snippets[0][:120]})"
+            if entry not in self.red_flags:
+                self.red_flags.append(entry)
 
     @field_validator("effort", mode="before")
     @classmethod
@@ -119,7 +138,10 @@ def save_to_tracker(project: str, verdict: str, brief_json: str) -> str:
 # ---------------------------------------------------------------- workflow
 BRIEF_INSTRUCTIONS = """You are a careful crypto campaign analyst for an airdrop farmer.
 Call research_campaign once on the given URL, then answer.
-Only state facts that appear in the tool output. If something is missing write 'unknown'.
+Only state facts that appear in the tool output.
+requirements = rules or conditions a participant must meet (accounts, eligibility, submission rules).
+red_flags = only risks to the participant (asks for seed phrase or wallet signing, upfront fees, fake urgency,
+unclear or discretionary payout, KYC with government ID, locked rewards). Rules are NOT red flags. If something is missing write 'unknown'.
 Never suggest connecting a wallet, sharing a seed phrase, paying fees or doing KYC.
 Return ONE JSON object with fields: project, reward, deadline, tasks (list), requirements (list),
 red_flags (list), effort (low|medium|high|unknown), verdict (do_it|maybe|skip), reason."""
@@ -193,6 +215,7 @@ def run_brief(
                 else ""
             )
             signals = sources.scan_signals(evidence.text) if evidence else {}
+            result.brief.add_scan_flags(signals.get("red_flags", {}))
 
             t1 = time.monotonic()
             log("[2/3] reviewer subagent: checking brief against evidence")

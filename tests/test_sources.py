@@ -50,3 +50,36 @@ def test_review_parser_tolerates_prose_and_garbage():
 def test_session_ids_are_stable_per_campaign():
     assert session_for("https://a") == session_for("https://a") != session_for("https://b")
     assert session_for("https://a", "r2").endswith("-r2")
+
+
+def test_requirements_misfiled_as_red_flags_move_to_requirements():
+    """Regression: the 3B model put submission rules under red_flags (run 2)."""
+    brief = CampaignBrief.model_validate(
+        {"project": "Hackathon #5", "reward": "$1,150", "deadline": "December 18, 2026",
+         "tasks": ["Build an agent"],
+         "requirements": ["Ensure the agent is reproducible and functioning"],
+         "red_flags": [
+             "Ensure the agent is reproducible and functioning",
+             "Use properly licensed code and data, disclose external dependencies",
+             "Awards are discretionary and half is in a one-month staking lock",
+             "Asks you to enter your seed phrase to claim",
+             "No specific red flags mentioned.",
+         ],
+         "effort": "medium", "verdict": "do_it", "reason": "ok"}
+    )
+    assert brief.red_flags == [
+        "Awards are discretionary and half is in a one-month staking lock",
+        "Asks you to enter your seed phrase to claim",
+    ]
+    assert brief.requirements == [
+        "Ensure the agent is reproducible and functioning",
+        "Use properly licensed code and data, disclose external dependencies",
+    ]
+
+
+def test_scanner_red_flags_are_always_kept():
+    brief = CampaignBrief.model_validate({"project": "P", "tasks": [], "red_flags": []})
+    hits = sources.scan_signals("Enter your 12-word seed phrase here")["red_flags"]
+    brief.add_scan_flags(hits)
+    brief.add_scan_flags(hits)
+    assert len(brief.red_flags) == 1 and brief.red_flags[0].startswith("scanner: seed phrase")

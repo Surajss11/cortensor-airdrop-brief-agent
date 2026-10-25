@@ -115,3 +115,22 @@ def key_lines(text: str, limit: int = 25) -> list[str]:
 
     lines = [" ".join(line.split()) for line in text.splitlines()]
     return [line[:220] for line in lines if line and KEY_LINE_PATTERN.search(line)][:limit]
+
+
+# A red flag is a risk to the participant, not a rule they must follow. Small
+# models often copy requirements ("keep secrets out of submissions") into the
+# red-flag list; anything without a risk cue is treated as a requirement.
+RISK_CUE = re.compile(
+    r"(scam|phish|drain|fraud|fake|impersonat|suspicious|unverified|unaudited|anonymous team|"
+    r"seed phrase|recovery phrase|private key|mnemonic|connect (your )?wallet|sign (a |the )?(message|transaction)|"
+    r"approv(e|al) (all|unlimited)|upfront|deposit|pay(ment)? (a )?fee|gas fee|send (eth|usdt|sol|bnb|funds)|"
+    r"guaranteed|risk[- ]free|too good|urgen|last chance|expires in|no (official|contact|docs|terms)|"
+    r"kyc|government id|passport|discretionary|may not (be )?(paid|awarded)|unclear (reward|payout|terms)|"
+    r"lock(ed|up)?|vesting|staking lock|not guaranteed|red flag|risk)",
+    re.I,
+)
+NOTHING_FOUND = re.compile(r"^\s*(none|no (specific |obvious )?red flags?.*|n/?a|unknown)\s*\.?\s*$", re.I)
+
+
+def is_risk(text: str) -> bool:
+    return bool(RISK_CUE.search(text)) and not NOTHING_FOUND.match(text)
