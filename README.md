@@ -60,6 +60,15 @@ openminion setup --provider cortensor-portal --model oss-20b --no-chat
 openminion doctor --check-turn
 ```
 
+CPU-hosted Ollama models need a longer provider timeout than the 60 s that `setup` writes (see rough edge 6):
+
+```bash
+python - <<'PY'
+import json; p = ".openminion/agents.json"; d = json.load(open(p))
+d["providers"]["ollama"]["timeout_seconds"] = 600; json.dump(d, open(p, "w"), indent=2)
+PY
+```
+
 ## Run
 
 ```bash
@@ -71,6 +80,13 @@ python -m pytest -q tests                         # deterministic tests, no mode
 
 `run.sh` sets `OPENMINION_BRAIN_MAX_ELAPSED_MS=1500000`: a CPU-only 3B model needs more than the default
 300 s turn budget.
+
+## Demo
+
+- `demo/demo.mp4`: terminal recording of a real run (tests, provider check, one model-backed brief with the reviewer
+  subagent and the approval-gated tracker save). Waiting on the model is sped up; nothing else is edited.
+- `demo/demo.cast`: the same recording as an asciinema cast (`asciinema play demo/demo.cast`).
+- `demo/demo.sh`: the exact script that was recorded, so anyone can reproduce it.
 
 ## Example output
 
@@ -86,6 +102,8 @@ See the table above and `findings/BUG_REPORTS.md` for full reproduction steps:
    `AgentOutputValidationError` when `output_type` is set.
 3. **Rough edge:** `@tool` defaults to `WRITE_SAFE`, so read-only tools trigger a write confirmation.
 4. **Rough edge:** `Agent.run(timeout_seconds=…)` does not raise the brain's 300 s elapsed budget.
+5. **Rough edge:** `forced_tools` is silently skipped when the entry step chooses `respond`.
+6. **Rough edge:** `setup --provider ollama` writes a 60 s provider timeout, too short for CPU models.
 
 ## What We Learned
 
@@ -94,6 +112,9 @@ See the table above and `findings/BUG_REPORTS.md` for full reproduction steps:
 - One tool that does fetch + deterministic scan is faster and more reliable on a 3B model than two chained tools.
 - Keeping the scam checks deterministic (regex evidence) and letting the model only summarize gives repeatable
   red-flag results; the reviewer subagent catches claims that are not in the evidence.
+- The same 3B model for analyst and reviewer misses omissions: in the recorded demo the brief reported only the
+  1st-place prize ($500) as the reward and the reviewer agreed. A deterministic reward/prize scan in the evidence
+  catches it; a different or larger reviewer model should be used when available (Portal).
 - Product feedback: check `run_state` before coercing output; default read tools to `READ_ONLY`; make per-run timeouts
   cover the turn budget; generate unique ids for id-less tool calls.
 

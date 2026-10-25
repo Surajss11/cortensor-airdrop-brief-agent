@@ -83,3 +83,14 @@ JSON payload. The entry step logged `brain.entry.path_detected {"path": "respond
 turn ended with a prose reply. No tool call, no error, `run()` returned normally, so the caller cannot tell the
 "forced" tool never ran. Expected: the tool is called, or the run fails / reports `forced_tool_unsatisfied`.
 The agent now detects this (tracker line count) and falls back to an explicit human-approved save.
+
+---
+
+## Rough edge 6: `openminion setup --provider ollama` writes `timeout_seconds: 60`, too short for CPU-hosted models
+
+Demo recording on 2026-10-25 (same box, `qwen2.5:3b` on 8 CPU cores, model cold): the analyst step failed after
+4 m 55 s with `provider failed: TIMEOUT: The configured model provider timed out before it could return a decision
+(ollama request timed out: timed out). Please retry.` The first request carries the full tool schema plus the fetched
+evidence, and prompt processing alone on CPU exceeds 60 s. Raising `providers.ollama.timeout_seconds` to 600 in
+`agents.json` fixes it. Expected: setup picks a longer default for local providers (or `doctor --check-turn` warns when
+a probe turn takes close to the timeout), and the timeout error names the setting to change.
