@@ -35,10 +35,12 @@ CONFLICT tool.call.requested
 provider response. `event_writes._stable_tool_event_id()` derives the event id from
 `(session_id, turn_scope_id, call_id, phase)`, so a later step in the same turn collides.
 
-**Fix (prepared locally, branch `fix/unique-fallback-tool-call-ids`, commit 08b82886):** add a per-response nonce,
-`call_<8 hex>_<index>`, plus a regression test that two responses never share an id. `tests/llm` and
-tool-calling suites: 736 passed; the 6 failures are pre-existing on `main` (provider-catalog name checks and a
-missing proof artifact). With the fix the same workflow runs to completion.
+**Reported and fixed upstream:** issue https://github.com/openminion/openminion/issues/410, fix PR
+https://github.com/openminion/openminion/pull/411. A maintainer confirmed the collision is real on `dev` and asked for
+changes; the PR now targets `dev`, gives each id-less response batch a full UUID prefix (`call_<uuid>_<n>`), keeps
+provider ids and batch order, and adds a regression that sends two id-less batches through the canonical tool-event
+persistence path in one session and turn (fails on `dev` with the same `idempotency conflict`, passes with the fix).
+With the fix the same workflow runs to completion.
 
 **Workaround without the fix:** set the Ollama connection's `tool_call_strategy` to `native` (Ollama returns real ids),
 or give the agent a single tool so a repeat call has an identical payload.

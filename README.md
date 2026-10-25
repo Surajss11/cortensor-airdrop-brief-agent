@@ -97,7 +97,9 @@ See `examples/` for a real run's Markdown brief and JSON (model: `qwen2.5:3b` on
 See the table above and `findings/BUG_REPORTS.md` for full reproduction steps:
 
 1. **Bug:** tool calls without provider ids reuse `call_1` across model steps in the same turn and kill it with
-   `session event idempotency conflict` (Ollama default `fallback` strategy). Fix prepared with a regression test.
+   `session event idempotency conflict` (Ollama default `fallback` strategy). Reported in
+   [openminion#410](https://github.com/openminion/openminion/issues/410), fix PR
+   [openminion#411](https://github.com/openminion/openminion/pull/411) with a persistence-path regression test.
 2. **Bug:** runtime errors (policy prompts, state-machine errors, time budget) come back as reply text and surface as
    `AgentOutputValidationError` when `output_type` is set.
 3. **Rough edge:** `@tool` defaults to `WRITE_SAFE`, so read-only tools trigger a write confirmation.
