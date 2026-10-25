@@ -1,0 +1,42 @@
+{
+  "url": "https://docs.cortensor.network/community-and-ecosystem/hackathon/hackathon-5.md",
+  "brief": {
+    "project": "Cortensor Hackathon #5 - OpenMinion Core Building Blocks",
+    "reward": "$1,150 total (5th place: $50 total, 4th place: $100 total, 3rd place: $200 total, 2nd place: $300 total, 1st place: $500 total)",
+    "deadline": "December 18, 2026",
+    "tasks": [
+      "Develop a small, working agent with the OpenMinion 0.1 Python SDK",
+      "Show it running and tell us what worked, what broke, and what should improve",
+      "Link your public project and submission materials in a pull request to the dedicated Hackathon #5 repository"
+    ],
+    "requirements": [
+      "Ensure the agent is reproducible and functioning",
+      "Provide a substantive fix PR for any bugs found",
+      "Use properly licensed code and data, disclose external dependencies, and keep secrets and private data out of public submissions"
+    ],
+    "red_flags": [
+      "Ensure the agent is reproducible and functioning",
+      "Provide a substantive fix PR for any bugs found",
+      "Use properly licensed code and data, disclose external dependencies, and keep secrets and private data out of public submissions"
+    ],
+    "effort": "medium",
+    "verdict": "do_it",
+    "reason": "The hackathon aligns with Cortensor's goals of testing core building blocks and provides a clear set of requirements and prizes."
+  },
+  "review": {
+    "agrees": true,
+    "issues": [
+      "The evidence does not explicitly state that the hackathon requires a polished frontend, multi-agent system, or production deployment, but it suggests that these are not required. The agent should focus on a small, working agent that works reliably."
+    ]
+  },
+  "saved": true,
+  "timings": {
+    "brief_s": 309.3,
+    "review_s": 278.4,
+    "save_s": 84.8
+  },
+  "run_ids": [
+    "7f250400261c41728f4766130b3d3f5a"
+  ],
+  "error": null
+}
